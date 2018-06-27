@@ -11,72 +11,72 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-	
 
 public class GmailTest {
 
 	private WebDriver driver;
-	private static final String GMAIL_URL="https://accounts.google.com/signinchooser?flowName=GlifWebSignIn&flowEntry=ServiceLogin";
-	
+	private static final String GMAIL_URL = "https://gmail.com";
+
+	@BeforeTest
+	public void beforeTest() {
+		System.setProperty("webdriver.chrome.driver", "C:\\Program Files\\chrome-driver\\chromedriver.exe");
+		// driver = new FirefoxDriver();
+		driver = new ChromeDriver();
+	}
+
 	@Test
 	public void successfulLogin() {
 		driver.get(GMAIL_URL);
-		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS); 
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 		WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-		email_phone.sendKeys("shaikzillani@gmail.com");
+		email_phone.sendKeys("suryamounica.2@gmail.com");
 		driver.findElement(By.id("identifierNext")).click();
 		WebElement password = driver.findElement(By.xpath("//input[@name='password']"));
 		WebDriverWait wait = new WebDriverWait(driver, 20);
 		wait.until(ExpectedConditions.elementToBeClickable(password));
-		password.sendKeys("yT*45L0(K");
+		password.sendKeys("123");
 		driver.findElement(By.id("passwordNext")).click();
+		driver.findElement(By.id(":al")).click();
 	}
-	
-	@Test
+
+	// @Test
 	public void invalidPassword() {
 		driver.get(GMAIL_URL);
-		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS); 
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 		WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-		
-		email_phone.sendKeys("shaikzillani@gmail.com");
+
+		email_phone.sendKeys("suryamounica.2@gmail.com");
 		driver.findElement(By.id("identifierNext")).click();
-		
+
 		WebElement password = driver.findElement(By.xpath("//input[@name='password']"));
 		WebDriverWait wait = new WebDriverWait(driver, 20);
 		wait.until(ExpectedConditions.elementToBeClickable(password));
-		
+
 		password.sendKeys("123");
 		driver.findElement(By.id("passwordNext")).click();
 	}
-	
-	@Test
+
+	// @Test
 	public void enterWithoutCreds() {
 		driver.get(GMAIL_URL);
-		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS); 
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 		WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
 		email_phone.sendKeys("");
 		driver.findElement(By.id("identifierNext")).click();
 	}
-	
-	 @BeforeTest
-	public void beforeTest() {
-		 System.setProperty("webdriver.chrome.driver", "C:\\Program Files\\chrome-driver\\chromedriver.exe");
-		 //driver = new FirefoxDriver();
-		 driver = new ChromeDriver();
-	} 
 
 	// @BeforeTest
 	public void LoginToGmail() {
 		driver.get("http://gmail.com.com");
-	}//
-
-	public void SelectDropDown(){
-		driver.findElement(By.id("get-started-btn")).click();
-		
 	}
-	@AfterTest
 
+	public void SelectDropDown() {
+		driver.findElement(By.id("get-started-btn")).click();
+
+	}
+
+	@AfterTest
 	public void afterTest() {
-		//driver.quit();
+		// driver.quit();
 	}
 }

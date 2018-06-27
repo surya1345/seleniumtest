@@ -6,7 +6,7 @@
       <class name="com.test.GmailTest">
         <methods>
           <include name="beforeTest"/>
-          <include name="enterWithoutCreds"/>
+          <include name="successfulLogin"/>
           <include name="afterTest"/>
         </methods>
       </class> <!-- com.test.GmailTest -->
