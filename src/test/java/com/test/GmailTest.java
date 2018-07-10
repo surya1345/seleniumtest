@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +18,11 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -38,10 +43,9 @@ public class GmailTest {
 	static HSSFWorkbook workbook;
 	// define an Excel Work sheet
 	static HSSFSheet sheet;
-	private static Map<String, String> emailAndPass;
-	private static final String INPUT_DATA = "E:\\credentials.xlsx";
-	private static final String TEST_RESULTS = "E:\\TestResult.xls";
-	private static final String LOGIN_TEST_RESULTS = "E:\\login_test_results.xls";
+
+	private static final String INPUT_DATA = "E:\\creds-1.xlsx";
+	private static final String TEST_RESULTS = "E:\\result.xls";
 
 	@BeforeTest
 	public void beforeTest() throws EncryptedDocumentException, InvalidFormatException, IOException {
@@ -50,152 +54,107 @@ public class GmailTest {
 		workbook = new HSSFWorkbook();
 		sheet = workbook.createSheet("Test Result");
 		testresultdata = new LinkedHashMap<String, Object[]>();
-		testresultdata.put("1", new Object[] { "Id", "Test Description", "Expected Result", "Status" });
-
-		emailAndPass = ReadExcel.read(INPUT_DATA);
-		int count = 0;
-		for (Map.Entry<String, String> entry : emailAndPass.entrySet()) {
-			testAllUsers(count++, entry.getKey(), entry.getValue());
-		}
+		testresultdata.put("0", new Object[] { "Email", "Password", "Expected Result", "Actual Result", "Status" });
 
 	}
 
 	@Test(priority = 1)
-	public void testAllUsers(int count, String email, String password) {
-		try {
-			driver = new ChromeDriver();
-			driver.get(GMAIL_URL);
-			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-			WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
+	public void testLoginUsers()
+			throws EncryptedDocumentException, InvalidFormatException, IOException, InterruptedException {
 
-			email_phone.sendKeys(email);
-			driver.findElement(By.id("identifierNext")).click();
-			WebElement pass = driver.findElement(By.xpath("//input[@name='password']"));
+		Workbook workbook = WorkbookFactory.create(new File(INPUT_DATA));
+
+		Sheet sheet = workbook.getSheetAt(0);
+		Iterator<Row> rowIterator = sheet.rowIterator();
+		int count = 1;
+		String email = "";
+		String password = "";
+		String expectedResult = "";
+		while (rowIterator.hasNext()) {
+			Row row = rowIterator.next();
+			if (row.getCell(0) == null) {
+
+				email = "";
+			} else {
+				row.getCell(0).setCellType(CellType.STRING);
+				email = row.getCell(0).toString();
+			}
+			if (row.getCell(1) == null) {
+				password = "";
+			} else {
+				row.getCell(1).setCellType(CellType.STRING);
+				password = row.getCell(1).toString();
+			}
+			if (row.getCell(2) == null) {
+				expectedResult = "";
+			} else {
+				row.getCell(2).setCellType(CellType.STRING);
+				expectedResult = row.getCell(2).toString();
+			}
+			testAllUsers(count, email, password, expectedResult);
+			driver.close();
+			count++;
+
+		}
+		workbook.close();
+
+	}
+
+	private void testAllUsers(int count, String email, String password, String expectedResult)
+			throws InterruptedException {
+
+		driver = new ChromeDriver();
+		driver.get(GMAIL_URL);
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+		WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
+
+		email_phone.sendKeys(email);
+		driver.findElement(By.id("identifierNext")).click();
+		String errorMessage = driver.findElement(By.xpath("//div[@jsname='B34EJ']")).getText();
+		WebElement pass = null;
+
+		if (driver.findElements(By.id("passwordNext")).size() != 0) {
+
+			pass = driver.findElement(By.xpath("//input[@name='password']"));
 			WebDriverWait wait = new WebDriverWait(driver, 20);
 			wait.until(ExpectedConditions.elementToBeClickable(pass));
 			pass.sendKeys(password);
 			driver.findElement(By.id("passwordNext")).click();
+			TimeUnit.SECONDS.sleep(2);
 
-			String sentMail = driver.findElement(By.partialLinkText("Sent Mail")).getText().toString();
-			assertEquals(sentMail, "Sent Mail");
-
-			testresultdata.put(String.valueOf(count), new Object[] { count + "d", email, password, "Pass" });
-
-		} catch (Exception ex) {
-			testresultdata.put(String.valueOf(count), new Object[] { count + "d", email, password, "Fail" });
-		}
-		writeResultsToFile(LOGIN_TEST_RESULTS);
-
-	}
-
-	// @Test(priority = 1)
-	public void successfulLogin() {
-		try {
-			driver = new ChromeDriver();
-			driver.get(GMAIL_URL);
-			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-			WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-			email_phone.sendKeys("suryamounica.2@gmail.com");
-			driver.findElement(By.id("identifierNext")).click();
-			WebElement password = driver.findElement(By.xpath("//input[@name='password']"));
-			WebDriverWait wait = new WebDriverWait(driver, 20);
-			wait.until(ExpectedConditions.elementToBeClickable(password));
-			password.sendKeys("rajumounicavarma234");
-			driver.findElement(By.id("passwordNext")).click();
-
-			String sentMail = driver.findElement(By.partialLinkText("Sent Mail")).getText().toString();
-			assertEquals(sentMail, "Sent Mail");
-
-			testresultdata.put("2", new Object[] { 1d, "login with valid credentials", "login successful", "Pass" });
-		} catch (Exception ex) {
-			testresultdata.put("2", new Object[] { 1d, "login with valid credentials", "login successful", "Fail" });
+			// THIS MEANS THAT YOU HAVE LOGGED IN SUCCESSFULLY
+			if (driver.findElements(By.xpath("//div[@jsname='B34EJ']")).size() == 0) {
+				String sentMail = driver.findElement(By.partialLinkText("Sent Mail")).getText().toString();
+				try {
+					assertEquals("Sent Mail", sentMail);
+					testresultdata.put(String.valueOf(count),
+							new Object[] { email, password, expectedResult, sentMail, "Pass" });
+				} catch (AssertionError assertionError) {
+					testresultdata.put(String.valueOf(count),
+							new Object[] { email, password, expectedResult, sentMail, "Fail" });
+				}
+			} else { // YOU DIDN'T LOGIN, YOU ARE ON PASSWORD PAGE,
+				// RIGHT EMAIL NO PASSWORD OR WRONG PASSWORD
+				try {
+					errorMessage = driver.findElement(By.xpath("//div[@jsname='B34EJ']")).getText();
+					assertEquals(expectedResult, errorMessage);
+					testresultdata.put(String.valueOf(count),
+							new Object[] { email, password, expectedResult, errorMessage, "Pass" });
+				} catch (AssertionError assertionError) {
+					testresultdata.put(String.valueOf(count),
+							new Object[] { email, password, expectedResult, errorMessage, "Fail" });
+				}
+			}
+		} else { // NO EMAIL
+			String errorMessageEmail = driver.findElement(By.xpath("//div[@jsname='B34EJ']")).getText();
+			testresultdata.put(String.valueOf(count),
+					new Object[] { email, password, expectedResult, errorMessageEmail, "Pass" });
 		}
 	}
 
-	// @Test(priority = 2)
-	public void checkComposeMail() {
-		try {
-			driver = new ChromeDriver();
-			driver.get(GMAIL_URL);
-			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-			WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-			email_phone.sendKeys("suryamounica.2@gmail.com");
-			driver.findElement(By.id("identifierNext")).click();
-			WebElement password = driver.findElement(By.xpath("//input[@name='password']"));
-			WebDriverWait wait = new WebDriverWait(driver, 20);
-			wait.until(ExpectedConditions.elementToBeClickable(password));
-			password.sendKeys("rajumounicavarma234");
-			driver.findElement(By.id("passwordNext")).click();
-
-			System.out.println("******** HERE ******");
-			String sentMail = driver.findElement(By.partialLinkText("Sent Mail")).getText().toString();
-			System.out.println("******** sentmail ******" + sentMail);
-
-			driver.findElement(By.id(":al")).click(); // click on compose email
-			// driver.switch_to.active_element
-			// WebElement
-			// toEmail=driver.findElement(By.id("textbox2")).equals(driver.switchTo().activeElement());
-
-			// WebDriverWait waitForComposePopUp = new WebDriverWait(driver, 3);
-			driver.findElement(By.xpath("//div[contains(text(),'Send')]")).click();
-
-			String sendButton = driver.findElement(By.xpath("//div[@id=':8e']")).getText();
-			System.out.println("###########" + sendButton);
-			assertEquals(sendButton, "Send");
-			assertEquals(sentMail, "Sent Mail");
-
-			testresultdata.put("2",
-					new Object[] { 2d, "Should be able to compose email", "compose email success", "Pass" });
-		} catch (Exception ex) {
-			testresultdata.put("2",
-					new Object[] { 2d, "Should be able to compose email", "compose email fail", "Fail" });
-		}
-	}
-
-	// @Test(priority = 3)
-	public void invalidcredentials() {
-		try {
-			driver = new ChromeDriver();
-			driver.get(GMAIL_URL);
-			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-			WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-
-			email_phone.sendKeys("yagsyaghj@gmailcom");
-			driver.findElement(By.id("identifierNext")).click();
-
-			String message = driver.findElement(By.xpath("//div[@jsname='B34EJ']")).getText();
-			System.out.println("###########" + message);
-
-			assertEquals(message, "Enter a valid email or phone number");
-
-			testresultdata.put("3",
-					new Object[] { 2d, "Enter invalid credentials", "Enter a valid email or phone number", "Pass" });
-		} catch (Exception ex) {
-			testresultdata.put("3",
-					new Object[] { 2d, "Enter invalid credentials", "Enter a valid email or phone number", "Fail" });
-		}
-	}
-
-	// @Test(priority = 4)
-	public void enterWithoutCreds() {
-		try {
-			driver = new ChromeDriver();
-			driver.get(GMAIL_URL);
-			driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-			WebElement email_phone = driver.findElement(By.xpath("//input[@id='identifierId']"));
-			email_phone.sendKeys("");
-			driver.findElement(By.id("identifierNext")).click();
-			String message = driver.findElement(By.xpath("//div[@jsname='B34EJ']")).getText();
-			System.out.println("###########" + message);
-
-			assertEquals(message, "Enter an email or phone number");
-
-			testresultdata.put("4", new Object[] { 3d, "click on login without entering the credentials",
-					"Enter an email or phone number", "Pass" });
-		} catch (Exception ex) {
-			testresultdata.put("4", new Object[] { 3d, "click on login without entering the credentials",
-					"Enter an email or phone number", "Fail" });
-		}
+	@AfterTest
+	public void AfterAll() {
+		writeResultsToFile(TEST_RESULTS);
 	}
 
 	private static void writeResultsToFile(String resultFile) {
